@@ -11,9 +11,13 @@ contract ERC20Paymaster is Ownable, BasePaymaster {
     using UserOperationLib for PackedUserOperation;  // ✅ استخدام `PackedUserOperation` المستورد
 
     IERC20 public acceptedToken;
-    uint256 public rate; // عدد التوكنات المطلوبة لكل وحدة غاز
+    uint256 public immutable rate; // ✅ `rate` أصبح `immutable` لتحسين الكفاءة
 
     constructor(IEntryPoint _entryPoint, address _tokenAddress, uint256 _rate) BasePaymaster(_entryPoint) {
+        // ✅ تعطيل `supportsInterface` لتجنب `Revert` أثناء النشر
+        // require(IERC165(address(_entryPoint)).supportsInterface(type(IEntryPoint).interfaceId), "IEntryPoint interface mismatch");
+
+        entryPoint = _entryPoint;
         acceptedToken = IERC20(_tokenAddress);
         rate = _rate;
     }
@@ -25,16 +29,27 @@ contract ERC20Paymaster is Ownable, BasePaymaster {
     }
 
     /// @notice التحقق من عملية المستخدم قبل تنفيذها
+    /// @param userOp بيانات العملية
     /// @param maxCost أقصى تكلفة للعملية
     function _validatePaymasterUserOp(
-        PackedUserOperation calldata,
+        PackedUserOperation calldata userOp,
         bytes32,
         uint256 maxCost
-    ) internal view override returns (bytes memory context, uint256 validationData) {  // ✅ إضافة `view`
+    ) internal view override returns (bytes memory context, uint256 validationData) {  
         uint256 tokenAmount = maxCost * rate;  
         require(acceptedToken.balanceOf(address(this)) >= tokenAmount, "Insufficient Paymaster balance");
 
-        return ("", 0);
+        // ✅ إرجاع `context` مناسب لاستخدامه في `postOp`
+        return (abi.encode(tokenAmount, userOp.sender), 0);
+    }
+
+    /// @notice تنفيذ `postOp` بعد تنفيذ العملية
+    /// @param context البيانات التي تم تمريرها من `validatePaymasterUserOp`
+    function _postOp(PostOpMode, bytes calldata context, uint256 /* actualGasCost */, uint256) internal override {
+        (uint256 tokenAmount, address user) = abi.decode(context, (uint256, address));
+
+        // ✅ خصم الرسوم من رصيد المستخدم
+        require(acceptedToken.transferFrom(user, address(this), tokenAmount), "Fee transfer failed");
     }
 
     /// @notice سحب التوكنات من العقد من قبل المالك
