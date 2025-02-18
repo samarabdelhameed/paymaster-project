@@ -1,66 +1,43 @@
-## Foundry
+# ERC20 Paymaster - Account Abstraction (ERC-4337)
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+## **Overview**
+`ERC20Paymaster` is a **Paymaster** smart contract compatible with **ERC-4337 (Account Abstraction)**, enabling users to pay gas fees using **ERC20 tokens** instead of the native network currency (e.g., ETH).  
+🚀 This enhances user experience and allows for more flexible transaction sponsorship.
 
-Foundry consists of:
+---
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## **📌 Features**
+✅ **Pay gas fees with ERC20 tokens**  
+✅ **Seamless integration with ERC-4337 `EntryPoint`**  
+✅ **Supports token-based gas fee sponsorship**  
+✅ **Compatible with Ethereum & EVM-compatible chains**  
+✅ **Designed for secure and efficient transactions**  
 
-## Documentation
+---
 
-https://book.getfoundry.sh/
+## **📌 How It Works**
+1. **Users submit a UserOperation** through a smart contract wallet.  
+2. **The EntryPoint contract** calls the `ERC20Paymaster` to validate the transaction.  
+3. **The Paymaster verifies** the user's ERC20 balance and locks the required amount for gas fees.  
+4. **If validation passes,** the transaction is executed.  
+5. **After execution,** the Paymaster settles the gas fees with the EntryPoint.  
 
-## Usage
+---
 
-### Build
+## **📌 Contract Architecture**
+### **🔹 `ERC20Paymaster.sol` (Main Contract)**
+- Uses **ERC-4337 `BasePaymaster`** as a parent contract.
+- Implements `_validatePaymasterUserOp` to check token balances.
+- Allows deposit & withdrawal of ERC20 tokens for gas sponsorship.
 
-```shell
-$ forge build
-```
+### **🔹 `BasePaymaster.sol`**
+- An abstract contract from the **Account Abstraction** standard.
+- Provides validation and gas fee management for Paymasters.
 
-### Test
+---
 
-```shell
-$ forge test
-```
+## **📌 Deployment**
+To deploy `ERC20Paymaster`, use Foundry with the following command:
 
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+```sh
+forge script script/ERC20Paymaster.s.sol:DeployScript --rpc-url <YOUR_RPC_URL> --private-key <YOUR_PRIVATE_KEY> --broadcast
